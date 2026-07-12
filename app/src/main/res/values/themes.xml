@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Mimi" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#12312B</item>
+        <item name="colorPrimaryDark">#0A211D</item>
+        <item name="colorAccent">#C6902B</item>
+    </style>
+</resources>
