@@ -40,16 +40,29 @@ jobs:
         continue-on-error: true
         run: gradle assembleDebug --stacktrace 2>&1 | tee build_log.txt
 
-      - name: Publicar el error como comentario del commit (solo si falló)
-        if: steps.build.outcome == 'failure'
+      - name: Listar archivos generados (diagnóstico)
+        run: |
+          echo "--- Contenido de app/build/outputs ---" >> build_log.txt
+          find app/build/outputs -type f >> build_log.txt 2>&1 || echo "(no existe app/build/outputs)" >> build_log.txt
+
+      - name: Publicar el log como comentario del commit
+        if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAIL=$(tail -c 60000 build_log.txt)
-          BODY=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1]))" "$TAIL")
-          curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
-            -d "{\"body\": \"### Log de compilación (falló)\n\`\`\`\n$(echo "$BODY" | sed 's/^"//;s/"$//')\n\`\`\`\"}"
+          python3 -c "
+import json, os, urllib.request
+tail = open('build_log.txt').read()[-60000:]
+body = '### Log de compilación\n\`\`\`\n' + tail + '\n\`\`\`'
+data = json.dumps({'body': body}).encode()
+req = urllib.request.Request(
+    'https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/comments',
+    data=data, method='POST')
+req.add_header('Authorization', 'token ' + os.environ['GITHUB_TOKEN'])
+req.add_header('Accept', 'application/vnd.github+json')
+urllib.request.urlopen(req)
+"
 
       - name: Fallar el job si la compilación falló
         if: steps.build.outcome == 'failure'
@@ -60,3 +73,4 @@ jobs:
         with:
           name: mimi-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
