@@ -23,7 +23,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:layout_marginBottom="20dp"
-            android:text="El primero marcado como emergencia es al que MIMI llama si el adulto mayor dice \"me caí\" o \"ayuda\"."
+            android:text="El primero marcado como emergencia es al que MIMI llama si el adulto mayor dice &quot;me caí&quot; o &quot;ayuda&quot;."
             android:textSize="15sp"
             android:textColor="#5C6E68" />
 
