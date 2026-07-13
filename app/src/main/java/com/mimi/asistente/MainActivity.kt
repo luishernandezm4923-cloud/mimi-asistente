@@ -1,7 +1,10 @@
 package com.mimi.asistente
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -12,6 +15,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -25,13 +29,32 @@ class MainActivity : AppCompatActivity() {
         }
     }.toTypedArray()
 
+    private lateinit var statusText: TextView
+    private lateinit var transcriptText: TextView
+
+    // Recibe en vivo lo que el servicio de voz va escuchando y su estado (cargando, error, etc.)
+    private val statusReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val text = intent?.getStringExtra(VoiceAssistantService.EXTRA_TEXT) ?: return
+            statusText.text = text
+        }
+    }
+
+    private val transcriptReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val text = intent?.getStringExtra(VoiceAssistantService.EXTRA_TEXT) ?: return
+            transcriptText.text = "Escuchando: \"$text\""
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         val contactsRepository = ContactsRepository(applicationContext)
 
-        val statusText = findViewById<TextView>(R.id.statusText)
+        statusText = findViewById(R.id.statusText)
+        transcriptText = findViewById(R.id.transcriptText)
         val startButton = findViewById<Button>(R.id.startButton)
         val emergencyButton = findViewById<Button>(R.id.emergencyButton)
         val settingsButton = findViewById<Button>(R.id.settingsButton)
@@ -43,7 +66,6 @@ class MainActivity : AppCompatActivity() {
         startButton.setOnClickListener {
             if (hasAllPermissions()) {
                 startVoiceService()
-                statusText.text = "MIMI está escuchando. Diga \"Oye MIMI\"."
             } else {
                 ActivityCompat.requestPermissions(this, requiredPermissions, 100)
             }
@@ -66,8 +88,21 @@ class MainActivity : AppCompatActivity() {
 
         if (hasAllPermissions()) {
             startVoiceService()
-            statusText.text = "MIMI está escuchando. Diga \"Oye MIMI\"."
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val lbm = LocalBroadcastManager.getInstance(this)
+        lbm.registerReceiver(statusReceiver, IntentFilter(VoiceAssistantService.ACTION_STATUS))
+        lbm.registerReceiver(transcriptReceiver, IntentFilter(VoiceAssistantService.ACTION_TRANSCRIPT))
+    }
+
+    override fun onStop() {
+        super.onStop()
+        val lbm = LocalBroadcastManager.getInstance(this)
+        lbm.unregisterReceiver(statusReceiver)
+        lbm.unregisterReceiver(transcriptReceiver)
     }
 
     private fun hasAllPermissions(): Boolean =
