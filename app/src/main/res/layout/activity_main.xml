@@ -44,6 +44,17 @@
         android:textColor="#12312B"
         android:gravity="center" />
 
+    <TextView
+        android:id="@+id/transcriptText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text=""
+        android:textSize="15sp"
+        android:textStyle="italic"
+        android:textColor="#5C6E68"
+        android:gravity="center" />
+
     <Button
         android:id="@+id/emergencyButton"
         android:layout_width="match_parent"
